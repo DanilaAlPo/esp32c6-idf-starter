@@ -1,4 +1,14 @@
 dependencies:
+  espressif/cjson:
+    component_hash: e788323270d90738662d66fffa910bfe1fba019bba087f01557e70c40485b469
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.7.19~2
   espressif/led_strip:
     component_hash: 097f698887601de00bed7ff58f91b9e074fa1ae1bcf53582034b01191cc88e9f
     dependencies:
@@ -13,8 +23,20 @@ dependencies:
     source:
       type: idf
     version: 6.1.0
+  matterizelabs/esp_gh_ota:
+    component_hash: e5b4fd546fb15918be5794578b4611c2d273440da9ec43530600902f7a7c0ece
+    dependencies:
+    - name: espressif/cjson
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^1.7.19
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.2.3
 direct_dependencies:
 - espressif/led_strip
-manifest_hash: 61dab4c101a77b0e0beb35b7e813e03e6a5c47a3f8a9e85374e90de19274b2d6
+- matterizelabs/esp_gh_ota
+manifest_hash: 098178f3c102aa7b7d5db2308aac0b00afc75c58283d00235b2fce6a249c6ff9
 target: esp32c6
 version: 3.0.0
