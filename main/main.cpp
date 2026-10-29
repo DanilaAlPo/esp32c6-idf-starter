@@ -237,6 +237,7 @@ extern "C" void app_main(void)
             printf("LED: ON\n");
         } else {
             // Выключение
+            led_strip_set_pixel(led_strip, 0, 0, 0, 50);
             led_strip_clear(led_strip);
             printf("LED: OFF\n");
         }
