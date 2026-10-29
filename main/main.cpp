@@ -123,6 +123,14 @@ static void ota_event_handler(void *arg, esp_event_base_t base, int32_t id, void
 void gitHubOTA()
 {
 
+    // 5. (КРИТИЧЕСКИ ВАЖНО) Подтверждение валидности текущей прошивки
+    // Отменяет откат, если прошивка загрузилась и работает нормально
+    esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to mark app valid: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "App marked as valid. Rollback cancelled.");
+    }
 
     // Регистрация обработчика событий OTA (опционально)
     ESP_ERROR_CHECK(esp_event_handler_register(ESP_HTTPS_OTA_EVENT, ESP_EVENT_ANY_ID, &ota_event_handler, NULL));
@@ -138,14 +146,6 @@ void gitHubOTA()
     // 4. Запуск поллера (он будет опрашивать GitHub Releases с интервалом, заданным в Kconfig)
     github_poller_start();
 
-    // 5. (КРИТИЧЕСКИ ВАЖНО) Подтверждение валидности текущей прошивки
-    // Отменяет откат, если прошивка загрузилась и работает нормально
-    esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to mark app valid: %s", esp_err_to_name(err));
-    } else {
-        ESP_LOGI(TAG, "App marked as valid. Rollback cancelled.");
-    }
 }
 
 
@@ -232,7 +232,7 @@ extern "C" void app_main(void)
         if (led_state) {
             // Включение: установка красного цвета (R=50, G=0, B=0)
             // Значение 50 не максимальное, чтобы не было слишком ярко
-            led_strip_set_pixel(led_strip, 0, 0, 50, 0);
+            led_strip_set_pixel(led_strip, 0, 50, 50, 50);
             led_strip_refresh(led_strip);
             printf("LED: ON\n");
         } else {
