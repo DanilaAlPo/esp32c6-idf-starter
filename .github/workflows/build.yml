@@ -17,10 +17,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Автоматически передаем версию из тега в CMake
+      - name: Set project version from tag
+        run: echo "PROJECT_VER=${{ github.ref_name }}" | sed 's/v//' >> $GITHUB_ENV
+          
       - name: Build with ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
           target: esp32c6
+          # Передаем переменную в контейнер сборки
+          command: "idf.py -DPROJECT_VER=${{ env.PROJECT_VER }} build"
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
