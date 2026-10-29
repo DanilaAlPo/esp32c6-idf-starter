@@ -232,7 +232,7 @@ extern "C" void app_main(void)
         if (led_state) {
             // Включение: установка красного цвета (R=50, G=0, B=0)
             // Значение 50 не максимальное, чтобы не было слишком ярко
-            led_strip_set_pixel(led_strip, 0, 0, 50, 0);
+            led_strip_set_pixel(led_strip, 0, 50, 0, 0);
             led_strip_refresh(led_strip);
             printf("LED: ON\n");
         } else {
