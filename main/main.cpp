@@ -27,6 +27,51 @@ static const char *WIFI_TAG = "WIFI";
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
+class GitHubOTA {
+private:
+    static constexpr const char* TAG = "OTA";
+
+public:
+    GitHubOTA() {}
+
+    void start() {
+        // Подтверждение валидности текущей прошивки
+        esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to mark app valid: %s", esp_err_to_name(err));
+        } else {
+            ESP_LOGI(TAG, "App marked as valid. Rollback cancelled.");
+        }
+
+        // Регистрация обработчика событий OTA (опционально)
+        ESP_ERROR_CHECK(esp_event_handler_register(ESP_HTTPS_OTA_EVENT, ESP_EVENT_ANY_ID, &ota_event_handler, NULL));
+
+        ESP_LOGI(TAG, "WiFi connected, starting GitHub OTA...");
+
+        // Запуск API конфигурации (позволяет задать owner/repo/token через HTTP или NVS)
+        github_config_api_start();
+
+        // Запуск поллера (он будет опрашивать GitHub Releases с интервалом, заданным в Kconfig)
+        github_poller_start();
+    }
+
+private:
+    static void ota_event_handler(void *arg, esp_event_base_t base, int32_t id, void *data) {
+        if (base != ESP_HTTPS_OTA_EVENT) return;
+        switch (id) {
+            case ESP_HTTPS_OTA_START:    ESP_LOGI(TAG, "OTA started"); break;
+            case ESP_HTTPS_OTA_CONNECTED: ESP_LOGI(TAG, "OTA connected"); break;
+            case ESP_HTTPS_OTA_FINISH:   ESP_LOGI(TAG, "OTA finish"); break;
+            case ESP_HTTPS_OTA_ABORT:    ESP_LOGW(TAG, "OTA abort"); break;
+            default: break;
+        }
+    }
+};
+
+
+
+
+
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
@@ -51,6 +96,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 
 void wifi_init_sta(void)
 {
+    ESP_LOGI(WIFI_TAG, "wifi_init_sta start");
     s_wifi_event_group = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
@@ -105,48 +151,7 @@ void wifi_init_sta(void)
 
 
 
-static const char *TAG = "OTA_APP";
 
-// (Опционально) Обработчик событий OTA для логирования прогресса
-static void ota_event_handler(void *arg, esp_event_base_t base, int32_t id, void *data)
-{
-    if (base != ESP_HTTPS_OTA_EVENT) return;
-    switch (id) {
-        case ESP_HTTPS_OTA_START:    ESP_LOGI(TAG, "OTA started"); break;
-        case ESP_HTTPS_OTA_CONNECTED: ESP_LOGI(TAG, "OTA connected"); break;
-        case ESP_HTTPS_OTA_FINISH:   ESP_LOGI(TAG, "OTA finish"); break;
-        case ESP_HTTPS_OTA_ABORT:    ESP_LOGW(TAG, "OTA abort"); break;
-        default: break;
-    }
-}
-
-void gitHubOTA()
-{
-
-    // 5. (КРИТИЧЕСКИ ВАЖНО) Подтверждение валидности текущей прошивки
-    // Отменяет откат, если прошивка загрузилась и работает нормально
-    esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to mark app valid: %s", esp_err_to_name(err));
-    } else {
-        ESP_LOGI(TAG, "App marked as valid. Rollback cancelled.");
-    }
-
-    // Регистрация обработчика событий OTA (опционально)
-    ESP_ERROR_CHECK(esp_event_handler_register(ESP_HTTPS_OTA_EVENT, ESP_EVENT_ANY_ID, &ota_event_handler, NULL));
-
-    // ... (Здесь ваш существующий код подключения к Wi-Fi) ...
-    // После того как Wi-Fi подключен и получен IP:
-
-    ESP_LOGI(TAG, "WiFi connected, starting GitHub OTA...");
-
-    // 3. Запуск API конфигурации (позволяет задать owner/repo/token через HTTP или NVS)
-    github_config_api_start();
-
-    // 4. Запуск поллера (он будет опрашивать GitHub Releases с интервалом, заданным в Kconfig)
-    github_poller_start();
-
-}
 
 
 
@@ -213,11 +218,11 @@ extern "C" void app_main(void)
 
 
     // 3. Подключение к Wi-Fi
-    ESP_LOGI(TAG, "Connecting to WiFi...");
     wifi_init_sta(); // Эта функция ждет подключения
 
     // 4. Теперь Wi-Fi есть, запуск OTA
-    gitHubOTA();
+    GitHubOTA ota;
+    ota.start();
 
     // Отключение буферизации stdout для удобства наблюдения за логами
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -234,12 +239,10 @@ extern "C" void app_main(void)
             // Значение 50 не максимальное, чтобы не было слишком ярко
             led_strip_set_pixel(led_strip, 0, 0, 50, 0);
             led_strip_refresh(led_strip);
-            printf("LED: ON\n");
         } else {
             // Выключение
             led_strip_set_pixel(led_strip, 0, 50, 0, 0);
-            led_strip_clear(led_strip);
-            printf("LED: OFF\n");
+            led_strip_refresh(led_strip);
         }
 
         // Переключение состояния
