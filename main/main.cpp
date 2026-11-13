@@ -55,7 +55,7 @@ private:
 
 #define WIFI_MAXIMUM_RETRY 10
 #define WIFI_SSID      "MyWeb"       // Замените на имя вашей сети
-#define WIFI_PASS      "klop90polka??"  // Замените на пароль от Wi-Fi
+#define WIFI_PASS      "klop90polka??."  // Замените на пароль от Wi-Fi
 
 static EventGroupHandle_t s_wifi_event_group;
 static int s_retry_num = 0;
@@ -73,6 +73,7 @@ public:
         ESP_LOGI(WIFI_TAG, "wifi_init_sta start");
         initNetwork();
         initWiFi();
+        registerEventHandlers();
         setWiFiConfig();
         startWiFi();
         waitForConnection();
